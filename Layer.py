@@ -1,33 +1,34 @@
 import numpy as np
+import Utils
 '''
 Class: Layer
     Description:
         The base class of all the layers in the neural network 
         Inherit this class to implement more specific layers
     Member Variable(s):
-        num_input_channel := the number of channel (C) of the input activation
-        window_size       := convolution kernel window size (R, S)
-        num_kernel        := number of kernels in the layer (M)
-        weight            := the weight of the layer, a np.int8 numpy array of dimension (M, C, R, S)
-        activation_type   := the type of activation functino used in the layer, a string that's either 'ReLU' or 'None'.
-        bias              := an indicator showing that whether this layer is biased or not
-        bias_weight       := the weight of the bias in the lyaer, a np.int32 array
+        num_input_channel(int): the number of channel (C) of the input activation
+        window_size(int)      :convolution kernel window size (R, S)
+        num_kernel(int)       : number of kernels in the layer (M)
+        weight(int)           : the weight of the layer, a np.int8 numpy array of dimension (M, C, R, S)
+        activation_type(int)  : the type of activation functino used in the layer, a string that's either 'ReLU' or 'None'.
+        bias(int)             : an indicator showing that whether this layer is biased or not
+        bias_weight(int)      : the weight of the bias in the lyaer, a np.int32 array
 '''
 class Layer:
-    def __init__(self, num_input_channel ,window_size, num_kernel, pretrained_weight, activation_type, activation_scale, biase, biase_weight):
+    def __init__(self, num_input_channel ,window_size, num_kernel, pretrained_weight, activation_type, activation_scale, bias, biase_weight):
         '''
         Description:
             The contructor function of class 'Layer'. This contructor set the dimension of the layer weight, 
             and store the pretrained weight for inference.
         Parameter(s):
-            num_input_channel := the number of channel (C) of the input activation.
-            window_size       := convolution kernel window size (R, S).
-            num_kernel        := number of kernels in the layer (M).
-            pretrained_weight := the pretrained weight of the layer, an numpy array of size (M, C, R, S)
-            activation_type   := the type of activation functino used in the layer, a string that's either 'ReLU' or 'None'.
-            activation_scale  := quantization scale used to quantize the output activation weight.
-            bias              := whether this layer is biased or not.
-            bias_weight       := the weight of the bias.
+            num_input_channel(int): the number of channel (C) of the input activation.
+            window_size(int)           : convolution kernel window size (R, S).
+            num_kernel(int)            : number of kernels in the layer (M).
+            pretrained_weight(np.array): the pretrained weight of the layer, an numpy array of size (M, C, R, S)
+            activation_type(str)       : the type of activation functino used in the layer, a string that's either 'ReLU' or 'None'.
+            activation_scale(float)    : quantization scale used to quantize the output activation weight.
+            bias(bool)                 : whether this layer is biased or not.
+            bias_weight(np.array)      : the weight of the bias.
         Return Value(s):
             N/A
         Exception(s):
@@ -49,14 +50,13 @@ class Layer:
         self.activation_scale = activation_scale
         # set the bias indicator, if biased, create np array and store the biase weight 
         self.is_biased = bias
-        if is_biased:
+        if self.is_biased:
             self.bias_weight = np.zeros((num_input_channel, window_size, window_size), dtype=np.int32)
             np.copyto(self.bias_weight, bias_weight)
-
-    def inference(self, input_activation: np.array) -> np.array:
+    def inference(self, input_activation: np.array): 
         '''
         Description:
-            Function that carries our the inference of the layer
+            Function that carries out the inference of the layer
         Paremeter(s):
             input_activation := the input activation of this layer, an np array
         Return Value(s):
@@ -90,7 +90,17 @@ class Layer:
 
 
 if __name__ == "__main__":
-    
+    # create numpy array for the weight of conv1
+    conv1_weight = np.zeros((6, 3, 5, 5), dtype=np.int8)
+    # read the weight and the scale of the first layer, and create the layer
+    Utils.read_weight(conv1_weight, './parameters/weights/conv1.weight.csv')
+    conv1_scale = Utils.read_activation_scale('./parameters/scale.json', 'conv1')
+    conv1_layer = Layer(3, 5, 6, conv1_weight, 'ReLU', conv1_scale, False, None)
+    print(conv1_layer)
+
+
+
+
 
                 
 
