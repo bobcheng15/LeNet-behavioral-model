@@ -64,7 +64,36 @@ class Layer:
         Exception(s):
             N/A
         '''
+        # case input_activation to np.uint8 (just to make sure)
         input_activation = input_activation.astype(np.uint8)
+        # create np.array to store the partial sum
+        partial_sum = np.array((self.num_kernel, input_activation.shape[3] - self.window_size + 2,
+                                input_activation.shape[3] - self.window_size + 2), dtype=np.int32)
+        # accumulate the partial sum
+        for i in range(0, partial_sum.shape[0]):
+            for j in range(0, partial_sum.shape[1]):
+                for k in range(0, partial_sum.shape[2]):
+                    for l in range(0, self.num_input_channel):
+                        for m in range(0, self.window_size):
+                            for n in range(0, self.window_size):
+                                partial_sum[i][j][k] += input_activation[l][j + m][n + n] * self.weight[l][m][n]
+        # apply the activation function, if an the layer have one.
+        if activation_type == 'ReLU':
+            output_activation = np.clip(partial_sum, a_min=0, a_max=np.Inf)
+        # quantize the output activation by scaling it.
+        output_activation = self.activation_scale * output_activation
+        # round the output activation and clip the activations that is out of range.
+        output_activation = np.clip(output_activation, a_min=-128, a_max=127).round()
+        # convert the type of the output activation 
+        output_activation = output_activation.astype(np.int8)
+        return output_activation
+
+
+if __name__ == "__main__":
+    
+
+                
+
 
         
 
