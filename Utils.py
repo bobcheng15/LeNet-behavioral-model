@@ -14,15 +14,34 @@ def read_weight(weight_array, weight_file):
     '''
     with open(weight_file) as fp:
         csv_reader = csv.reader(fp, delimiter=',')
-        # read the content of the csv file and store them in the 
-        for i in range(0, weight_array.shape[0]):
-            for j in range(0, weight_array.shape[1]):
-                for k in range(0, weight_array.shape[2]):
-                    for l in range(0, weight_array.shape[3]):
-                        # note that the scientific notation have to first be converted to float
-                        # then integer.
-                        weight_array[i][j][k][l] = int(float(next(csv_reader)[0]))
+        # if it is a convolutional layer
+        if (len(weight_array.shape) == 4):
+            # read the content of the csv file and store them in the 
+            for i in range(0, weight_array.shape[0]):
+                for j in range(0, weight_array.shape[1]):
+                    for k in range(0, weight_array.shape[2]):
+                        for l in range(0, weight_array.shape[3]):
+                            # note that the scientific notation have to first be converted to float
+                            # then integer.
+                            weight_array[i][j][k][l] = int(float(next(csv_reader)[0]))
+        #weight of a linear layer
+        elif(len(weight_array.shape) == 2):
+            for i in range(0, weight_array.shape[0]):
+                for j in range(0, weight_array.shape[1]):
+                    weight_array[i][j] = int(float(next(csv_reader)[0]))
+        # input activation
+        elif(len(weight_array.shape) == 3):
+            for i in range(0, weight_array.shape[0]):
+                for j in range(0, weight_array.shape[1]):
+                    for k in range(0, weight_array.shape[2]):
+                         weight_array[i][j][k] = (float(next(csv_reader)[0]))
+        #bias
+        else:
+            for i in range(0, weight_array.shape[0]):
+                weight_array[i] = int(float(next(csv_reader)[0]))
+                print(weight_array[i])
 
+                
 def read_activation_scale(scale_file, layer_name):
     '''
     Description:
@@ -35,4 +54,4 @@ def read_activation_scale(scale_file, layer_name):
     '''
     with open(scale_file) as fp:
         all_scale = json.load(fp)
-        return all_scale[layer_name + '_output_scale']
+        return all_scale[layer_name]

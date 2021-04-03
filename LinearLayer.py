@@ -12,8 +12,8 @@ Class: LinearLayer
         bias(int)              : an indicator showing that whether this layer is biased or not
         bias_weight(int)       : the weight of the bias in the lyaer, a np.int32 array
 '''
-class LinearLayer:
-    def __init__(self, num_input_channel ,window_size, num_kernel, pretrained_weight, activation_type, activation_scale, bias, biase_weight):
+class LinearLayer(Layer):
+    def __init__(self, num_input_channel ,window_size, num_kernel, pretrained_weight, activation_type, activation_scale, bias, bias_weight):
         '''
         Description:
             The contructor function of class 'Layer'. This contructor set the dimension of the layer weight, 
@@ -32,9 +32,9 @@ class LinearLayer:
         Exception(s):
             N/A
         '''
-        super().__init__(num_input_channel, window_size, num_input_channel)
+        super().__init__(num_input_channel, window_size, num_kernel)
         # create numpy array to store weight (R, S, C, M), and store the pretrained weight
-        self.weight = np.zeros((num_kernel, num_input_channel ,window_size, window_size), dtype=np.int8)
+        self.weight = np.zeros((num_kernel, num_input_channel), dtype=np.int8)
         np.copyto(self.weight, pretrained_weight)
         # set the activation type
         self.activation_type = activation_type
@@ -43,8 +43,9 @@ class LinearLayer:
         # set the bias indicator, if biased, create np array and store the biase weight 
         self.is_biased = bias
         if self.is_biased:
-            self.bias_weight = np.zeros((num_input_channel, window_size, window_size), dtype=np.int32)
+            self.bias_weight = np.zeros((num_kernel), dtype=np.int32)
             np.copyto(self.bias_weight, bias_weight)
+            print('hi', self.bias_weight)
     def inference(self, input_activation: np.array): 
         '''
         Description:
@@ -62,7 +63,7 @@ class LinearLayer:
             input_activation_flatten = []
             for i in range(0, input_activation.shape[0]):
                 temp = input_activation[i, :, :, :].flatten()
-                input_activation_flatten.append()
+                input_activation_flatten.append(temp)
             input_activation = np.array(input_activation_flatten, dtype=np.int8)
         # create np.array to store the partial sum
         partial_sum = np.zeros((input_activation.shape[0], self.num_kernel), dtype=np.int32)
@@ -70,15 +71,15 @@ class LinearLayer:
         for i in range(0, partial_sum.shape[0]):
             for j in range(0, partial_sum.shape[1]):
                     for l in range(0, self.num_input_channel):
-                        partial_sum[i][j] += input_activation[i][l] * self.weight[j][l]
-        # add the bias to the partial sum
-        if self.is_biased:
-            partial_sum += self.bias_weight
+                        partial_sum[i][j] += input_activation[i][l].astype(np.int32) * self.weight[j][l].astype(np.int32)
+            # add the bias to the partial sum
+            if self.is_biased:
+                partial_sum[i] += self.bias_weight
         # apply the activation function, if an the layer have one.
         if self.activation_type == 'ReLU':
             output_activation = np.clip(partial_sum, a_min=0, a_max=np.Inf)
         elif self.activation_type== 'None':
-            pass
+            output_activation = partial_sum
         else:
             raise NotImplementedError
         # quantize the output activation by scaling it.

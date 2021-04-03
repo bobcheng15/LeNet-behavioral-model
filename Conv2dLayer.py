@@ -29,7 +29,7 @@ class Conv2dLayer(Layer):
         Exception(s):
             N/A
         '''
-        super().__init__(num_input_channel, window_size, num_input_channel)
+        super().__init__(num_input_channel, window_size, num_kernel)
         # create numpy array to store weight (R, S, C, M), and store the pretrained weight
         self.weight = np.zeros((num_kernel, num_input_channel ,window_size, window_size), dtype=np.int8)
         np.copyto(self.weight, pretrained_weight)
@@ -55,23 +55,28 @@ class Conv2dLayer(Layer):
         partial_sum = np.zeros((input_activation.shape[0], self.num_kernel, input_activation.shape[2] - self.window_size + 1,
                                 input_activation.shape[2] - self.window_size + 1), dtype=np.int32)
         # accumulate the partial sum
-        for batch in range(0, partial_sum.shape[0])
-            for i in range(0, partial_sum.shape[1]):
-                for j in range(0, partial_sum.shape[2]):
-                    for k in range(0, partial_sum.shape[3]):
-                        for l in range(0, self.num_input_channel):
-                            for m in range(0, self.window_size):
-                                for n in range(0, self.window_size):
-                                    partial_sum[batch][i][j][k] += input_activation[batch][l][j + m][n + n] * self.weight[i][l][m][n]
+        for n in range(0, partial_sum.shape[0]):
+            for m in range(0, partial_sum.shape[1]):
+                for p in range(0, partial_sum.shape[2]):
+                    for q in range(0, partial_sum.shape[3]):
+                        partial_sum[n][m][p][q] 
+                        for r in range(0, self.window_size):
+                            for s in range(0, self.window_size):
+                                for c in range(0, self.num_input_channel):
+                                    h = p + r
+                                    w = q + s
+                                    partial_sum[n][m][p][q] += input_activation[n][c][h][w].astype(np.int32) * self.weight[m][c][r][s].astype(np.int32)             
         # apply the activation function, if an the layer have one.
         if self.activation_type == 'ReLU':
             output_activation = np.clip(partial_sum, a_min=0, a_max=np.Inf)
         # quantize the output activation by scaling it.
         output_activation = self.activation_scale * output_activation
+       
         # round the output activation and clip the activations that is out of range.
         output_activation = np.clip(output_activation, a_min=-128, a_max=127).round()
         # convert the type of the output activation 
         output_activation = output_activation.astype(np.int8)
+        
         return output_activation
 
 

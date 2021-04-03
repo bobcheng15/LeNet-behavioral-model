@@ -13,7 +13,7 @@ Class: Network
 '''
 
 class Network:
-    def __init__(self, input_scale, input_mean, input_std):
+    def __init__(self, input_scale):
         '''
         Description:
             The constructor of the Network class. It inistialize the number of layers, the list of layers, and 
@@ -30,25 +30,23 @@ class Network:
         # initialize number of layer, layer list, input scale
         self.num_layers = 0;
         self.input_scale = input_scale
-        self.input_mean = input_mean
-        self.input_std = input_std
         self.layers = []
         
     
-    def normalize_input(self, input_activation):
-        '''
-        Description:
-            This function normalize the input activation. It is done by first subtracting the mean from the activation, 
-            then divide it with the standard deviation.
-        Parameter(s):
-            input_activation(np.array): the input activation.
-        Return Value(s):
-            input_activation(np.array): the normalized input activation.
-        Exception(s);
-            N/A
-        '''
-        input_activation = (input_activation - self.input_mean) / self.input_std
-        return input_activation
+    # def normalize_input(self, input_activation):
+    #     '''
+    #     Description:
+    #         This function normalize the input activation. It is done by first subtracting the mean from the activation, 
+    #         then divide it with the standard deviation.
+    #     Parameter(s):
+    #         input_activation(np.array): the input activation.
+    #     Return Value(s):
+    #         input_activation(np.array): the normalized input activation.
+    #     Exception(s);
+    #         N/A
+    #     '''
+    #     input_activation = (input_activation - self.input_mean) / self.input_std
+    #     return input_activation
 
     def add_layer(self, new_layer: Layer):
         '''
@@ -76,15 +74,17 @@ class Network:
             N/A
         '''
         # normalize the input activation.
-        input_activation = self.normalize_input(input_activation)
+        # input_activation = self.normalize_input(input_activation)
         # scale the input with the input scale and clip it to np.int8
         quantized_input = input_activation * self.input_scale
         quantized_input = np.clip(quantized_input, a_min=-128, a_max=127).round()
         quantized_input = quantized_input.astype(np.int8)
         # Feed teh quantized input to the rest of the network, layer by layer
         output_activation = quantized_input
+        count = 0
         for layer in self.layers:
             output_activation = layer.inference(output_activation)
+            count += 1
         return output_activation
         
         
