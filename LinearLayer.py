@@ -57,22 +57,27 @@ class LinearLayer:
             N/A
         '''
         # case input_activation to np.uint8 (just to make sure)
-        input_activation = input_activation.astype(np.uint8)
+        if len(input_activation.shape) != 2:
+            input_activation = input_activation.astype(np.int8)
+            input_activation_flatten = []
+            for i in range(0, input_activation.shape[0]):
+                temp = input_activation[i, :, :, :].flatten()
+                input_activation_flatten.append()
+            input_activation = np.array(input_activation_flatten, dtype=np.int8)
         # create np.array to store the partial sum
-        partial_sum = np.array((self.num_kernel, input_activation.shape[3] - self.window_size + 2,
-                                input_activation.shape[3] - self.window_size + 2), dtype=np.int32)
+        partial_sum = np.zeros((input_activation.shape[0], self.num_kernel), dtype=np.int32)
         # accumulate the partial sum
         for i in range(0, partial_sum.shape[0]):
             for j in range(0, partial_sum.shape[1]):
-                for k in range(0, partial_sum.shape[2]):
                     for l in range(0, self.num_input_channel):
-                        for m in range(0, self.window_size):
-                            for n in range(0, self.window_size):
-                                partial_sum[i][j][k] += input_activation[l][j + m][n + n] * self.weight[l][m][n]
+                        partial_sum[i][j] += input_activation[i][l] * self.weight[j][l]
+        # add the bias to the partial sum
+        if self.is_biased:
+            partial_sum += self.bias_weight
         # apply the activation function, if an the layer have one.
-        if activation_type == 'ReLU':
+        if self.activation_type == 'ReLU':
             output_activation = np.clip(partial_sum, a_min=0, a_max=np.Inf)
-        elif activation == 'None':
+        elif self.activation_type== 'None':
             pass
         else:
             raise NotImplementedError

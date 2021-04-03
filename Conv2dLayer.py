@@ -50,18 +50,19 @@ class Conv2dLayer(Layer):
             N/A
         '''
         # case input_activation to np.uint8 (just to make sure)
-        input_activation = input_activation.astype(np.uint8)
+        input_activation = input_activation.astype(np.int8)
         # create np.array to store the partial sum
-        partial_sum = np.zeros((self.num_kernel, input_activation.shape[2] - self.window_size + 1,
+        partial_sum = np.zeros((input_activation.shape[0], self.num_kernel, input_activation.shape[2] - self.window_size + 1,
                                 input_activation.shape[2] - self.window_size + 1), dtype=np.int32)
         # accumulate the partial sum
-        for i in range(0, partial_sum.shape[0]):
-            for j in range(0, partial_sum.shape[1]):
-                for k in range(0, partial_sum.shape[2]):
-                    for l in range(0, self.num_input_channel):
-                        for m in range(0, self.window_size):
-                            for n in range(0, self.window_size):
-                                partial_sum[i][j][k] += input_activation[l][j + m][n + n] * self.weight[i][l][m][n]
+        for batch in range(0, partial_sum.shape[0])
+            for i in range(0, partial_sum.shape[1]):
+                for j in range(0, partial_sum.shape[2]):
+                    for k in range(0, partial_sum.shape[3]):
+                        for l in range(0, self.num_input_channel):
+                            for m in range(0, self.window_size):
+                                for n in range(0, self.window_size):
+                                    partial_sum[batch][i][j][k] += input_activation[batch][l][j + m][n + n] * self.weight[i][l][m][n]
         # apply the activation function, if an the layer have one.
         if self.activation_type == 'ReLU':
             output_activation = np.clip(partial_sum, a_min=0, a_max=np.Inf)

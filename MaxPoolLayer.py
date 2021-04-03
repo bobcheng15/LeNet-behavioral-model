@@ -8,8 +8,8 @@ Class: MaxPoolLayer
     Member Variable(s):
         N/A
 '''
-class LinearLayer:
-    def __init__(self, num_input_channel ,window_size, num_kernel, pretrained_weight, activation_type, activation_scale, bias, biase_weight):
+class MaxPoolLayer(Layer):
+    def __init__(self, num_input_channel ,window_size, num_kernel):
         '''
         Description:
             The contructor function of class 'Layer'. This contructor set the dimension of the layer weight, 
@@ -37,21 +37,22 @@ class LinearLayer:
             N/A
         '''
         # case input_activation to np.uint8 (just to make sure)
-        input_activation = input_activation.astype(np.uint8)
+        input_activation = input_activation.astype(np.int8)
         # create np.array to store the partial sum
-        output_activation = np.array((self.num_kernel, input_activation.shape[3] - self.window_size + 2,
-                                input_activation.shape[3] - self.window_size + 2), dtype=np.int32)
+        output_activation = np.zeros((input_activation.shape[0], input_activation.shape[1], int(input_activation.shape[2] / self.window_size), int(input_activation.shape[3] / self.window_size)), dtype=np.int32)
         # max pooling operation
-
-        # apply the activation function, if an the layer have one.
-        if activation_type == 'ReLU':
-            output_activation = np.clip(partial_sum, a_min=0, a_max=np.Inf)
-        elif activation == 'None':
-            pass
-        else:
-            raise NotImplementedError
-        # quantize the output activation by scaling it.
-        output_activation = self.activation_scale * output_activation
+        print(output_activation.shape)
+        for i in range(output_activation.shape[0]):
+            for j in range(output_activation.shape[1]):
+                for k in range(output_activation.shape[2]):
+                    for l in range(output_activation.shape[3]):
+                        # array used to collect the numbers in the max pooling window 
+                        MAX = np.NINF
+                        for w in range(self.window_size):
+                            for h in range(self.window_size):
+                                if (input_activation[i][j][k * self.window_size + w][l * self.window_size + h] > MAX):
+                                    output_activation[i][j][k][l] =  input_activation[i][j][k * self.window_size + w][l * self.window_size + h]
+                                    MAX = input_activation[i][j][k * self.window_size + w][l * self.window_size + h]
         # round the output activation and clip the activations that is out of range.
         output_activation = np.clip(output_activation, a_min=-128, a_max=127).round()
         # convert the type of the output activation 
@@ -60,10 +61,9 @@ class LinearLayer:
 
 
 if __name__ == "__main__":
-    # create numpy array for the weight of conv1
-    conv1_weight = np.zeros((6, 3, 5, 5), dtype=np.int8)
-    # read the weight and the scale of the first layer, and create the layer
-    Utils.read_weight(conv1_weight, './parameters/weights/conv1.weight.csv')
-    conv1_scale = Utils.read_activation_scale('./parameters/scale.json', 'conv1')
-    conv1_layer = LinearLayer(3, 5, 6, conv1_weight, 'None', conv1_scale, False, None)
-    print(conv1_layer)
+    maxpool_layer = MaxPoolLayer(2, 2, 2)
+    input_activation =  np.array([[[[1, 2, 3, 4], [1, 2, 3, 4]], [[4, 4, 3, 4], [1, 2, 3, 4]]]])
+    print(input_activation)
+    print(input_activation.shape)
+    output_activation = maxpool_layer.inference(input_activation)
+    print(output_activation)
