@@ -1,6 +1,7 @@
 import numpy as np
 import Utils
 from Layer import Layer
+import numba as nb
 '''
 Class: LinearLayer
     Description:
@@ -42,10 +43,10 @@ class LinearLayer(Layer):
         self.activation_scale = activation_scale
         # set the bias indicator, if biased, create np array and store the biase weight 
         self.is_biased = bias
+        self.bias_weight = np.zeros((num_kernel), dtype=np.int32)
         if self.is_biased:
-            self.bias_weight = np.zeros((num_kernel), dtype=np.int32)
             np.copyto(self.bias_weight, bias_weight)
-            print('hi', self.bias_weight)
+
     def inference(self, input_activation: np.array): 
         '''
         Description:
@@ -68,13 +69,14 @@ class LinearLayer(Layer):
         # create np.array to store the partial sum
         partial_sum = np.zeros((input_activation.shape[0], self.num_kernel), dtype=np.int32)
         # accumulate the partial sum
-        for i in range(0, partial_sum.shape[0]):
-            for j in range(0, partial_sum.shape[1]):
-                    for l in range(0, self.num_input_channel):
-                        partial_sum[i][j] += input_activation[i][l].astype(np.int32) * self.weight[j][l].astype(np.int32)
-            # add the bias to the partial sum
-            if self.is_biased:
-                partial_sum[i] += self.bias_weight
+        self.FullConCompute(input_activation, partial_sum, self.weight, self.is_biased, self.bias_weight, self.num_input_channel)
+        # for i in range(0, partial_sum.shape[0]):
+        #     for j in range(0, partial_sum.shape[1]):
+        #             for l in range(0, self.num_input_channel):
+        #                 partial_sum[i][j] += input_activation[i][l].astype(np.int32) * self.weight[j][l].astype(np.int32)
+        #     # add the bias to the partial sum
+        #     if self.is_biased:
+        #         partial_sum[i] += self.bias_weight
         # apply the activation function, if an the layer have one.
         if self.activation_type == 'ReLU':
             output_activation = np.clip(partial_sum, a_min=0, a_max=np.Inf)
@@ -89,6 +91,16 @@ class LinearLayer(Layer):
         # convert the type of the output activation 
         output_activation = output_activation.astype(np.int8)
         return output_activation
+    @staticmethod
+    @nb.jit()       
+    def FullConCompute(input_activation, partial_sum, weight, is_biased, bias_weight, num_input_channel):
+        for i in range(0, partial_sum.shape[0]):
+            for j in range(0, partial_sum.shape[1]):
+                    for l in range(0, num_input_channel):
+                        partial_sum[i][j] += np.array(input_activation[i][l], dtype=np.int32) * np.array(weight[j][l], dtype=np.int32)
+            # add the bias to the partial sum
+            if is_biased:
+                partial_sum[i] += bias_weight      
 
 
 if __name__ == "__main__":

@@ -1,6 +1,8 @@
 import numpy as np
 import Utils
 from Layer import Layer
+import numba as nb
+
 '''
 Class: Conv2dLayer
     Description:
@@ -37,7 +39,7 @@ class Conv2dLayer(Layer):
         self.activation_type = activation_type
         # set the activation quantization scale
         self.activation_scale = activation_scale
-        
+
     def inference(self, input_activation: np.array): 
         '''
         Description:
@@ -50,22 +52,13 @@ class Conv2dLayer(Layer):
             N/A
         '''
         # case input_activation to np.uint8 (just to make sure)
-        input_activation = input_activation.astype(np.int8)
+        # input_activation = input_activation.astype(np.int8)
         # create np.array to store the partial sum
-        partial_sum = np.zeros((input_activation.shape[0], self.num_kernel, input_activation.shape[2] - self.window_size + 1,
-                                input_activation.shape[2] - self.window_size + 1), dtype=np.int32)
+        partial_sum = np.zeros((input_activation.shape[0], self.num_kernel, input_activation.shape[2] - self.window_size + 1, input_activation.shape[2] - self.window_size + 1), dtype=np.int32)
         # accumulate the partial sum
-        for n in range(0, partial_sum.shape[0]):
-            for m in range(0, partial_sum.shape[1]):
-                for p in range(0, partial_sum.shape[2]):
-                    for q in range(0, partial_sum.shape[3]):
-                        partial_sum[n][m][p][q] 
-                        for r in range(0, self.window_size):
-                            for s in range(0, self.window_size):
-                                for c in range(0, self.num_input_channel):
-                                    h = p + r
-                                    w = q + s
-                                    partial_sum[n][m][p][q] += input_activation[n][c][h][w].astype(np.int32) * self.weight[m][c][r][s].astype(np.int32)             
+        # this method is implemented using a static method
+        # to avoid dealing with jitclass
+        self.convolve(input_activation, partial_sum, self.weight, self.window_size, self.num_input_channel)         
         # apply the activation function, if an the layer have one.
         if self.activation_type == 'ReLU':
             output_activation = np.clip(partial_sum, a_min=0, a_max=np.Inf)
@@ -78,6 +71,32 @@ class Conv2dLayer(Layer):
         output_activation = output_activation.astype(np.int8)
         
         return output_activation
+    @staticmethod
+    @nb.jit()
+    def convolve(input_activation, partial_sum, weight, window_size, num_input_channel):
+        '''
+        Description:
+            Function that carries out the convolution process
+        Parameter(s):
+            input_activation(np.array): the input activation to the convolution
+            partial_sum(np.array)     : the partial sum to be accumulated during convolution
+            weight(np.array)          : the weight of the kernel
+            window_size(int)          : the windows size of the kernel
+            num_input_channel(int)    : number of channals 'input_activation' contains
+        Return Value(s)
+            N/A
+        '''
+        for n in range(0, partial_sum.shape[0]):
+            for m in range(0, partial_sum.shape[1]):
+                for p in range(0, partial_sum.shape[2]):
+                    for q in range(0, partial_sum.shape[3]):
+                        partial_sum[n][m][p][q] 
+                        for r in range(0, window_size):
+                            for s in range(0, window_size):
+                                for c in range(0, num_input_channel):
+                                    h = p + r
+                                    w = q + s
+                                    partial_sum[n][m][p][q] += np.array(input_activation[n][c][h][w], dtype=np.int32) * np.array(weight[m][c][r][s], dtype=np.int32)
 
 
 if __name__ == "__main__":

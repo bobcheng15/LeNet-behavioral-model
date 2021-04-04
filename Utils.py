@@ -1,5 +1,8 @@
 import csv 
 import json
+import numba as nb
+import numpy as np
+
 
 def read_weight(weight_array, weight_file):
     '''
@@ -39,7 +42,6 @@ def read_weight(weight_array, weight_file):
         else:
             for i in range(0, weight_array.shape[0]):
                 weight_array[i] = int(float(next(csv_reader)[0]))
-                print(weight_array[i])
 
                 
 def read_activation_scale(scale_file, layer_name):
@@ -55,3 +57,4 @@ def read_activation_scale(scale_file, layer_name):
     with open(scale_file) as fp:
         all_scale = json.load(fp)
         return all_scale[layer_name]
+

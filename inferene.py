@@ -5,6 +5,9 @@ from Network import Network
 from Conv2dLayer import Conv2dLayer
 from MaxPoolLayer import MaxPoolLayer
 from LinearLayer import LinearLayer
+import time
+import numba as nb
+
 
 def create_network():
     input_scale = Utils.read_activation_scale('./parameters/scale.json', 'input_scale')
@@ -40,7 +43,9 @@ if __name__ == "__main__":
     input_activation = np.zeros((3, 32, 32), dtype=float)
     Utils.read_weight(input_activation, './parameters/activations/input.csv')
     input_activation = np.expand_dims(input_activation, axis=0)
-    print(input_activation)
+    start = time.time()
     output_activation = network.inference(input_activation)
+    end = time.time()
+    print("Time taken: ", end - start)
     print(output_activation)
 

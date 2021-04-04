@@ -41,7 +41,6 @@ class MaxPoolLayer(Layer):
         # create np.array to store the partial sum
         output_activation = np.zeros((input_activation.shape[0], input_activation.shape[1], int(input_activation.shape[2] / self.window_size), int(input_activation.shape[3] / self.window_size)), dtype=np.int32)
         # max pooling operation
-        print(output_activation.shape)
         for i in range(output_activation.shape[0]):
             for j in range(output_activation.shape[1]):
                 for k in range(output_activation.shape[2]):
