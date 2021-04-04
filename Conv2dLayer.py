@@ -58,7 +58,7 @@ class Conv2dLayer(Layer):
         # accumulate the partial sum
         # this method is implemented using a static method
         # to avoid dealing with jitclass
-        self.convolve(input_activation, partial_sum, self.weight, self.window_size, self.num_input_channel)         
+        Utils.convolve(input_activation, partial_sum, self.weight, self.window_size, self.num_input_channel)         
         # apply the activation function, if an the layer have one.
         if self.activation_type == 'ReLU':
             output_activation = np.clip(partial_sum, a_min=0, a_max=np.Inf)
@@ -71,34 +71,8 @@ class Conv2dLayer(Layer):
         output_activation = output_activation.astype(np.int8)
         
         return output_activation
-    @staticmethod
-    @nb.jit()
-    def convolve(input_activation, partial_sum, weight, window_size, num_input_channel):
-        '''
-        Description:
-            Function that carries out the convolution process
-        Parameter(s):
-            input_activation(np.array): the input activation to the convolution
-            partial_sum(np.array)     : the partial sum to be accumulated during convolution
-            weight(np.array)          : the weight of the kernel
-            window_size(int)          : the windows size of the kernel
-            num_input_channel(int)    : number of channals 'input_activation' contains
-        Return Value(s)
-            N/A
-        '''
-        for n in range(0, partial_sum.shape[0]):
-            for m in range(0, partial_sum.shape[1]):
-                for p in range(0, partial_sum.shape[2]):
-                    for q in range(0, partial_sum.shape[3]):
-                        partial_sum[n][m][p][q] 
-                        for r in range(0, window_size):
-                            for s in range(0, window_size):
-                                for c in range(0, num_input_channel):
-                                    h = p + r
-                                    w = q + s
-                                    partial_sum[n][m][p][q] += np.array(input_activation[n][c][h][w], dtype=np.int32) * np.array(weight[m][c][r][s], dtype=np.int32)
 
-
+   
 if __name__ == "__main__":
     # create numpy array for the weight of conv1
     conv1_weight = np.zeros((6, 3, 5, 5), dtype=np.int8)

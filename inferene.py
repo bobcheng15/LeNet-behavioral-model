@@ -7,7 +7,10 @@ from MaxPoolLayer import MaxPoolLayer
 from LinearLayer import LinearLayer
 import time
 import numba as nb
-
+import torch
+import torchvision
+import torchvision.transforms as transforms
+import tqdm
 
 def create_network():
     input_scale = Utils.read_activation_scale('./parameters/scale.json', 'input_scale')
@@ -39,13 +42,38 @@ def create_network():
     return network
 
 if __name__ == "__main__":
+    transform = transforms.Compose(
+    [transforms.ToTensor(),
+     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+
+    trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
+                                            download=True, transform=transform)
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=4,
+                                            shuffle=True, num_workers=2)
+
+    testset = torchvision.datasets.CIFAR10(root='./data', train=False,
+                                        download=True, transform=transform)
+    testloader = torch.utils.data.DataLoader(testset, batch_size=4,
+                                            shuffle=False, num_workers=4)
     network = create_network()
-    input_activation = np.zeros((3, 32, 32), dtype=float)
-    Utils.read_weight(input_activation, './parameters/activations/input.csv')
-    input_activation = np.expand_dims(input_activation, axis=0)
+    # input_activation = np.zeros((3, 32, 32), dtype=float)
+    # Utils.read_weight(input_activation, './parameters/activations/input.csv')
+    # input_activation = np.expand_dims(input_activation, axis=0)
     start = time.time()
-    output_activation = network.inference(input_activation)
+    # output_activation = network.inference(input_activation)
+    count = 0
+    total_count = 0
+    for step, (input_activation, label) in enumerate(tqdm.tqdm(testloader)):
+        output_activation = network.inference(input_activation.cpu().numpy())
+        output_label = np.argmax(output_activation, axis=1)
+        for i in range(4):
+            total_count += 1
+            if output_label[i] == label[i]:
+                count += 1
+    print(count/total_count)
+    # print(output_label)
+    # print(label)
     end = time.time()
     print("Time taken: ", end - start)
-    print(output_activation)
+    #print(output_activation)
 

@@ -69,7 +69,7 @@ class LinearLayer(Layer):
         # create np.array to store the partial sum
         partial_sum = np.zeros((input_activation.shape[0], self.num_kernel), dtype=np.int32)
         # accumulate the partial sum
-        self.FullConCompute(input_activation, partial_sum, self.weight, self.is_biased, self.bias_weight, self.num_input_channel)
+        Utils.FullConCompute(input_activation, partial_sum, self.weight, self.is_biased, self.bias_weight, self.num_input_channel)
         # for i in range(0, partial_sum.shape[0]):
         #     for j in range(0, partial_sum.shape[1]):
         #             for l in range(0, self.num_input_channel):
@@ -91,17 +91,7 @@ class LinearLayer(Layer):
         # convert the type of the output activation 
         output_activation = output_activation.astype(np.int8)
         return output_activation
-    @staticmethod
-    @nb.jit()       
-    def FullConCompute(input_activation, partial_sum, weight, is_biased, bias_weight, num_input_channel):
-        for i in range(0, partial_sum.shape[0]):
-            for j in range(0, partial_sum.shape[1]):
-                    for l in range(0, num_input_channel):
-                        partial_sum[i][j] += np.array(input_activation[i][l], dtype=np.int32) * np.array(weight[j][l], dtype=np.int32)
-            # add the bias to the partial sum
-            if is_biased:
-                partial_sum[i] += bias_weight      
-
+   
 
 if __name__ == "__main__":
     # create numpy array for the weight of conv1

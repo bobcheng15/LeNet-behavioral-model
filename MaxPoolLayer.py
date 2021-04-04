@@ -1,6 +1,7 @@
 import numpy as np
 import Utils
 from Layer import Layer
+import numba as nb
 '''
 Class: MaxPoolLayer
     Description:
@@ -41,22 +42,13 @@ class MaxPoolLayer(Layer):
         # create np.array to store the partial sum
         output_activation = np.zeros((input_activation.shape[0], input_activation.shape[1], int(input_activation.shape[2] / self.window_size), int(input_activation.shape[3] / self.window_size)), dtype=np.int32)
         # max pooling operation
-        for i in range(output_activation.shape[0]):
-            for j in range(output_activation.shape[1]):
-                for k in range(output_activation.shape[2]):
-                    for l in range(output_activation.shape[3]):
-                        # array used to collect the numbers in the max pooling window 
-                        MAX = np.NINF
-                        for w in range(self.window_size):
-                            for h in range(self.window_size):
-                                if (input_activation[i][j][k * self.window_size + w][l * self.window_size + h] > MAX):
-                                    output_activation[i][j][k][l] =  input_activation[i][j][k * self.window_size + w][l * self.window_size + h]
-                                    MAX = input_activation[i][j][k * self.window_size + w][l * self.window_size + h]
+        Utils.MaxPool(input_activation, output_activation, self.window_size)
         # round the output activation and clip the activations that is out of range.
         output_activation = np.clip(output_activation, a_min=-128, a_max=127).round()
         # convert the type of the output activation 
         output_activation = output_activation.astype(np.int8)
         return output_activation
+    
 
 
 if __name__ == "__main__":
