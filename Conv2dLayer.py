@@ -9,11 +9,10 @@ Class: Conv2dLayer
         The class inherits the 'Layer' class and implement the 2d convolutional layer in the network.
     Member Variable(s):
         weight(np.array)       : the weight of the layer, a np.int8 numpy array of dimension (M, C, R, S).
-        activation_type(int)   : the type of activation functino used in the layer, a string that's either 'ReLU' or 'None'.
         activation_scale(float): the output activation quantization scale for quantizing the output activation
 '''
 class Conv2dLayer(Layer):
-    def __init__(self, num_input_channel ,window_size, num_kernel, pretrained_weight, activation_type, activation_scale):
+    def __init__(self, num_input_channel ,window_size, num_kernel, pretrained_weight, activation_scale):
         '''
         Description:
             Inherits from the constructor of the base class, the contructor function of class 'Conv2dLayer'.
@@ -24,7 +23,6 @@ class Conv2dLayer(Layer):
             window_size(int)           : convolution kernel window size (R, S).
             num_kernel(int)            : number of kernels in the layer (M).
             pretrained_weight(np.array): the pretrained weight of the layer, an numpy array of size (M, C, R, S)
-            activation_type(str)       : the type of activation functino used in the layer, a string that's either 'ReLU' or 'None'.
             activation_scale(float)    : quantization scale used to quantize the output activation weight.
         Return Value(s):
             N/A
@@ -35,8 +33,6 @@ class Conv2dLayer(Layer):
         # create numpy array to store weight (R, S, C, M), and store the pretrained weight
         self.weight = np.zeros((num_kernel, num_input_channel ,window_size, window_size), dtype=np.int8)
         np.copyto(self.weight, pretrained_weight)
-        # set the activation type
-        self.activation_type = activation_type
         # set the activation quantization scale
         self.activation_scale = activation_scale
 
@@ -58,19 +54,41 @@ class Conv2dLayer(Layer):
         # accumulate the partial sum
         # this method is implemented using a static method
         # to avoid dealing with jitclass
-        Utils.convolve(input_activation, partial_sum, self.weight, self.window_size, self.num_input_channel)         
-        # apply the activation function, if an the layer have one.
-        if self.activation_type == 'ReLU':
-            output_activation = np.clip(partial_sum, a_min=0, a_max=np.Inf)
+        self.convolve(input_activation, partial_sum, self.weight, self.window_size, self.num_input_channel)         
         # quantize the output activation by scaling it.
-        output_activation = self.activation_scale * output_activation
-       
+        output_activation = self.activation_scale * partial_sum
         # round the output activation and clip the activations that is out of range.
         output_activation = np.clip(output_activation, a_min=-128, a_max=127).round()
         # convert the type of the output activation 
         output_activation = output_activation.astype(np.int8)
         
         return output_activation
+    @staticmethod
+    @nb.jit()
+    def convolve(input_activation, partial_sum, weight, window_size, num_input_channel):
+        '''
+        Description:
+            Function that carries out the convolution process
+        Parameter(s):
+            input_activation(np.array): the input activation to the convolution
+            partial_sum(np.array)     : the partial sum to be accumulated during convolution
+            weight(np.array)          : the weight of the kernel
+            window_size(int)          : the windows size of the kernel
+            num_input_channel(int)    : number of channals 'input_activation' contains
+        Return Value(s)
+            N/A
+        '''
+        for n in range(0, partial_sum.shape[0]):
+            for m in range(0, partial_sum.shape[1]):
+                for p in range(0, partial_sum.shape[2]):
+                    for q in range(0, partial_sum.shape[3]):
+                        for r in range(0, window_size):
+                            for s in range(0, window_size):
+                                for c in range(0, num_input_channel):
+                                    h = p + r
+                                    w = q + s
+                                    partial_sum[n][m][p][q] += input_activation[n][c][h][w] * weight[m][c][r][s]     
+                        partial_sum[n][m][p][q] = 0 if partial_sum[n][m][p][q] < 0 else partial_sum[n][m][p][q]
 
    
 if __name__ == "__main__":

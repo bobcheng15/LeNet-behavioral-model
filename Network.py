@@ -32,22 +32,6 @@ class Network:
         self.input_scale = input_scale
         self.layers = []
         
-    
-    # def normalize_input(self, input_activation):
-    #     '''
-    #     Description:
-    #         This function normalize the input activation. It is done by first subtracting the mean from the activation, 
-    #         then divide it with the standard deviation.
-    #     Parameter(s):
-    #         input_activation(np.array): the input activation.
-    #     Return Value(s):
-    #         input_activation(np.array): the normalized input activation.
-    #     Exception(s);
-    #         N/A
-    #     '''
-    #     input_activation = (input_activation - self.input_mean) / self.input_std
-    #     return input_activation
-
     def add_layer(self, new_layer: Layer):
         '''
         Description:

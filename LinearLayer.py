@@ -68,30 +68,37 @@ class LinearLayer(Layer):
             input_activation = np.array(input_activation_flatten, dtype=np.int8)
         # create np.array to store the partial sum
         partial_sum = np.zeros((input_activation.shape[0], self.num_kernel), dtype=np.int32)
-        # accumulate the partial sum
-        Utils.FullConCompute(input_activation, partial_sum, self.weight, self.is_biased, self.bias_weight, self.num_input_channel)
-        # for i in range(0, partial_sum.shape[0]):
-        #     for j in range(0, partial_sum.shape[1]):
-        #             for l in range(0, self.num_input_channel):
-        #                 partial_sum[i][j] += input_activation[i][l].astype(np.int32) * self.weight[j][l].astype(np.int32)
-        #     # add the bias to the partial sum
-        #     if self.is_biased:
-        #         partial_sum[i] += self.bias_weight
-        # apply the activation function, if an the layer have one.
-        if self.activation_type == 'ReLU':
-            output_activation = np.clip(partial_sum, a_min=0, a_max=np.Inf)
-        elif self.activation_type== 'None':
-            output_activation = partial_sum
-        else:
-            raise NotImplementedError
+        # use a static method to accumulate the partial sum since numba's class support is shit
+        self.FullConCompute(input_activation, partial_sum, self.weight, self.is_biased, self.bias_weight, self.num_input_channel, self.activation_type)
         # quantize the output activation by scaling it.
-        output_activation = self.activation_scale * output_activation
+        output_activation = self.activation_scale * partial_sum
         # round the output activation and clip the activations that is out of range.
         output_activation = np.clip(output_activation, a_min=-128, a_max=127).round()
         # convert the type of the output activation 
         output_activation = output_activation.astype(np.int8)
         return output_activation
-   
+
+    @staticmethod
+    @nb.jit()      
+    def FullConCompute(input_activation, partial_sum, weight, is_biased, bias_weight, num_input_channel, activation_type):
+        '''
+        Description:
+            Function that carry out the computation of the fully connected layer and applies the activation function
+        Parameter(s):
+            input_activation(np.array): the input activation to this layer
+            partial_sum(np.array)     : the partial sum to be accumulated
+            weight(np.array)          : the weight of this layer
+            is_biased(bool)           : whether this layer is biased or not
+            biase_weight(np.arry)     : the bias of this layer
+            num_input_channel(int)    : the number of channel input_activation possesses
+            activation_type(str)      : the type of the activation function, 'ReLU', or 'None'
+        '''
+        for i in range(0, partial_sum.shape[0]):
+            for j in range(0, partial_sum.shape[1]):
+                    for l in range(0, num_input_channel):
+                        partial_sum[i][j] += input_activation[i][l] * weight[j][l]
+                    partial_sum[i][j] += bias_weight[j]
+                    partial_sum[i][j] = 0 if activation_type == 'ReLU' and partial_sum[i][j] < 0 else partial_sum[i][j]
 
 if __name__ == "__main__":
     # create numpy array for the weight of conv1
