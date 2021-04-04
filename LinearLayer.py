@@ -68,6 +68,8 @@ class LinearLayer(Layer):
             input_activation = np.array(input_activation_flatten, dtype=np.int8)
         # create np.array to store the partial sum
         partial_sum = np.zeros((input_activation.shape[0], self.num_kernel), dtype=np.int32)
+        # collect the unquantized partial sum
+        output_collection = partial_sum.reshape(partial_sum.shape[0], -1)
         # use a static method to accumulate the partial sum since numba's class support is shit
         self.FullConCompute(input_activation, partial_sum, self.weight, self.is_biased, self.bias_weight, self.num_input_channel, self.activation_type)
         # quantize the output activation by scaling it.
@@ -76,7 +78,7 @@ class LinearLayer(Layer):
         output_activation = np.clip(output_activation, a_min=-128, a_max=127).round()
         # convert the type of the output activation 
         output_activation = output_activation.astype(np.int8)
-        return output_activation
+        return output_activation, output_collection
 
     @staticmethod
     @nb.jit()      

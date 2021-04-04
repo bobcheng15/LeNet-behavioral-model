@@ -41,20 +41,23 @@ class Conv2dLayer(Layer):
         Description:
             Function that carries out the inference of the layer
         Paremeter(s):
-            input_activation := the input activation of this layer, an np array
+            input_activation(np.array): the input activation of this layer, an np array
         Return Value(s):
-            output_activation := the output activation of this layer, an np array
+            output_activation(np.array): the output activation of this layer, an np array
+            output_collection(np.array): the flattened unquantized output activation
         Exception(s):
             N/A
         '''
         # case input_activation to np.uint8 (just to make sure)
-        # input_activation = input_activation.astype(np.int8)
+        input_activation = input_activation.astype(np.int8)
         # create np.array to store the partial sum
         partial_sum = np.zeros((input_activation.shape[0], self.num_kernel, input_activation.shape[2] - self.window_size + 1, input_activation.shape[2] - self.window_size + 1), dtype=np.int32)
         # accumulate the partial sum
         # this method is implemented using a static method
         # to avoid dealing with jitclass
-        self.convolve(input_activation, partial_sum, self.weight, self.window_size, self.num_input_channel)         
+        self.convolve(input_activation, partial_sum, self.weight, self.window_size, self.num_input_channel) 
+        # collect the unquantized partial sum
+        output_collection = partial_sum.reshape(partial_sum.shape[0], -1)        
         # quantize the output activation by scaling it.
         output_activation = self.activation_scale * partial_sum
         # round the output activation and clip the activations that is out of range.
@@ -62,7 +65,7 @@ class Conv2dLayer(Layer):
         # convert the type of the output activation 
         output_activation = output_activation.astype(np.int8)
         
-        return output_activation
+        return output_activation, output_collection
     @staticmethod
     @nb.jit()
     def convolve(input_activation, partial_sum, weight, window_size, num_input_channel):

@@ -11,6 +11,7 @@ import torch
 import torchvision
 import torchvision.transforms as transforms
 import tqdm
+import matplotlib.pyplot as plt
 
 def create_network():
     input_scale = Utils.read_activation_scale('./parameters/scale.json', 'input_scale')
@@ -64,7 +65,7 @@ if __name__ == "__main__":
     count = 0
     total_count = 0
     for step, (input_activation, label) in enumerate(tqdm.tqdm(testloader)):
-        output_activation = network.inference(input_activation.cpu().numpy())
+        output_activation = network.inference(input_activation.cpu().numpy(), step)
         output_label = np.argmax(output_activation, axis=1)
         for i in range(4):
             total_count += 1
@@ -73,5 +74,23 @@ if __name__ == "__main__":
     print(count/total_count)
     end = time.time()
     print("Time taken: ", end - start)
+    fig, axs = plt.subplots(5, gridspec_kw={'width_ratios': [5]}, figsize=(15,15))
+    #adjust the layout of the subplots so the title of the plot don't overlap with each other
+    plt.tight_layout()
+    #set the title of each subplot
+    axs[0].title.set_text('conv1')
+    axs[1].title.set_text('conv2')
+    axs[2].title.set_text('fc1')
+    axs[3].title.set_text('fc2')
+    axs[4].title.set_text('fc3')
+    #plot the histogram
+    axs[0].hist(network.output_collection[0].flatten())
+    axs[1].hist(network.output_collection[2].flatten())
+    axs[2].hist(network.output_collection[4].flatten())
+    axs[3].hist(network.output_collection[5].flatten())
+    axs[4].hist(network.output_collection[6].flatten())
+    plt.yscale('log')
+    plt.savefig('a.png')
+
 
 

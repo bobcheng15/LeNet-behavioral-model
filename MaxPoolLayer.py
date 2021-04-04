@@ -47,7 +47,7 @@ class MaxPoolLayer(Layer):
         output_activation = np.clip(output_activation, a_min=-128, a_max=127).round()
         # convert the type of the output activation 
         output_activation = output_activation.astype(np.int8)
-        return output_activation
+        return output_activation, np.empty(0)
     @staticmethod    
     @nb.jit()
     def MaxPool(input_activation, output_activation, window_size):
