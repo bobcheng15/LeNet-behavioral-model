@@ -71,9 +71,7 @@ if __name__ == "__main__":
             if output_label[i] == label[i]:
                 count += 1
     print(count/total_count)
-    # print(output_label)
-    # print(label)
     end = time.time()
     print("Time taken: ", end - start)
-    #print(output_activation)
+
 
