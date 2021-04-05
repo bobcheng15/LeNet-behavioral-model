@@ -77,8 +77,20 @@ if __name__ == "__main__":
     fig, axs = plt.subplots(5, gridspec_kw={'width_ratios': [5]}, figsize=(15,15))
     #adjust the layout of the subplots so the title of the plot don't overlap with each other
     plt.tight_layout()
+    plt.yscale('log')
     #set the title of each subplot
     axs[0].title.set_text('conv1')
+    
+    print("conv1 max:", np.amax(network.output_collection[0]))
+    print("conv1 min:", np.amin(network.output_collection[0]))
+    print("conv2 max:", np.amax(network.output_collection[2]))
+    print("conv2 min:", np.amin(network.output_collection[2]))
+    print("fc1 max:", np.amax(network.output_collection[4]))
+    print("fc1 min:", np.amin(network.output_collection[4]))
+    print("fc2 max:", np.amax(network.output_collection[5]))
+    print("fc2 min:", np.amin(network.output_collection[5]))
+    print("fc3 max:", np.amax(network.output_collection[6]))
+    print("fc3 min:", np.amin(network.output_collection[6]))
     axs[1].title.set_text('conv2')
     axs[2].title.set_text('fc1')
     axs[3].title.set_text('fc2')
@@ -89,7 +101,7 @@ if __name__ == "__main__":
     axs[2].hist(network.output_collection[4].flatten())
     axs[3].hist(network.output_collection[5].flatten())
     axs[4].hist(network.output_collection[6].flatten())
-    plt.yscale('log')
+    
     plt.savefig('a.png')
 
 

@@ -51,6 +51,15 @@ class MaxPoolLayer(Layer):
     @staticmethod    
     @nb.jit()
     def MaxPool(input_activation, output_activation, window_size):
+        '''
+        Description:
+            Function that carry out the computation of the max pooling layer 
+        Parameter(s):
+            input_activation(np.array) : the input activation to this layer
+            output_activation(np.array): the down sampled output activation
+            weight(np.array)           : the weight of this layer
+            window_size(int)           : the size of the down sample kernel
+        '''
         for i in range(output_activation.shape[0]):
             for j in range(output_activation.shape[1]):
                 for k in range(output_activation.shape[2]):
