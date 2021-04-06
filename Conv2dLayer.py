@@ -91,16 +91,17 @@ class Conv2dLayer(Layer):
                                     h = p + r
                                     w = q + s
                                     partial_sum[n][m][p][q] += input_activation[n][c][h][w] * weight[m][c][r][s] 
+                                    if partial_sum[n][m][p][q] > 524287: 
+                                        partial_sum[n][m][p][q] = 524287
+                                        print("OVERFLOW +")
+                                    elif partial_sum[n][m][p][q] < -524288:
+                                        print(partial_sum[n][m][p][q])
+                                        partial_sum[n][m][p][q] = -524288
+                                        print("OVERFLOW -")
+
                         # relu activation    
                         partial_sum[n][m][p][q] = 0 if partial_sum[n][m][p][q] < 0 else partial_sum[n][m][p][q]
                         # reduce bit width to 19 bits
-                        if partial_sum[n][m][p][q] > 524287: 
-                            partial_sum[n][m][p][q] = 524287
-                            print("OVERFLOW +")
-                        elif partial_sum[n][m][p][q] < -52488:
-                            partial_sum[n][m][p][q] = -524288
-                            print("OVERFLOW -")
-
    
 if __name__ == "__main__":
     # create numpy array for the weight of conv1

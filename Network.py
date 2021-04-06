@@ -69,7 +69,7 @@ class Network:
         count = 0
         for layer in self.layers:
             output_activation, collection = layer.inference(output_activation)
-            self.output_collection[count][num_batch: num_batch + 4] = collection
+            self.output_collection[count][4 * num_batch: 4 * num_batch + 4] = collection
             count += 1
         return output_activation
         
