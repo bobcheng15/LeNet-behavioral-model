@@ -53,7 +53,7 @@ class Network:
         Parameter(s):
             input_activation(np.arry): the original input image.
             num_batch(int)           : the id of the batch the input activation belongs to 
-            bit_width                : the bit width of the partial sum
+            bit_width(list)          : the bit width of the partial sum for each layer
         Return Value(S):
             output_activation(np.array): the final output of the network.
         Exception(s):
@@ -69,8 +69,8 @@ class Network:
         output_activation = quantized_input
         count = 0
         for layer in self.layers:
-            output_activation, collection = layer.inference(output_activation, bit_width)
-            self.output_collection[count][num_batch: num_batch + 4] = collection
+            output_activation, collection = layer.inference(output_activation, bit_width[count])
+            self.output_collection[count][num_batch * 4: num_batch * 4 + output_activation.shape[0]] = collection
             count += 1
         return output_activation
         

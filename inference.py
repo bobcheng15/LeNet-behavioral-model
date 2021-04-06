@@ -71,37 +71,50 @@ if __name__ == "__main__":
     start = time.time()
     correct_count = 0
     total_count = 0
-    bit_width = 19
+    # the bit width of the partial sums of each quantized layer
+    # notice that this veriable is omitted in max pooling layers
+    # so I set the bit width of these layers to 32
+    bit_widths = [18, 32, 18, 32, 19, 18, 17]
     baseline_acc = 52.79
-    while True:
-        # iterate through the test set
-        print("Bit-width: ", bit_width)
-        for step, (input_activation, label) in enumerate(tqdm.tqdm(testloader)):
-            # inference with the batch of data
-            output_activation = network.inference(input_activation.cpu().numpy(), step, bit_width)
-            # take argmax on the activation output to obtain the prediction 
-            output_label = np.argmax(output_activation, axis=1)
-            # check the prediction against the ground truth 
-            for i in range(4):
-                total_count += 1
-                if output_label[i] == label[i]:
-                    correct_count += 1
-        # print the accuracy
-        accuracy = correct_count/total_count * 100
-        print("Accuracy: ", accuracy, "%")
-        # test the difference between the original implementation
-        # and the one with the current partial sum bit width
-        if baseline_acc -  accuracy >= 1:
-            break;
-        else:
-            correct_count = 0
-            total_count = 0
-            bit_width -= 1
-    print("Minimum bit width: ", bit_width + 1)
-        
-       
-   
     
+    for step, (input_activation, label) in enumerate(tqdm.tqdm(testloader)):
+        # inference with the batch of data
+        output_activation = network.inference(input_activation.cpu().numpy(), step, bit_widths)
+        # take argmax on the activation output to obtain the prediction 
+        output_label = np.argmax(output_activation, axis=1)
+        # check the prediction against the ground truth 
+        for i in range(4):
+            total_count += 1
+            if output_label[i] == label[i]:
+                correct_count += 1
+    # print the accuracy
+    accuracy = correct_count/total_count * 100
+    print("Accuracy: ", accuracy, "%")
+    # test the difference between the original implementation
+    # and the one with the current partial sum bit width
+    fig, axs = plt.subplots(5)
+    plt.tight_layout()
+    plt.yscale('log')
+    axs[0].title.set_text('conv1')
+    axs[1].title.set_text('conv2')
+    axs[2].title.set_text('fc1')
+    axs[3].title.set_text('fc2')
+    axs[4].title.set_text('fc3')
+    axs[0].hist(network.output_collection[0].flatten())
+    axs[1].hist(network.output_collection[2].flatten())
+    axs[2].hist(network.output_collection[4].flatten())
+    axs[3].hist(network.output_collection[5].flatten())
+    axs[4].hist(network.output_collection[6].flatten())
+    plt.savefig('c.png')
+    print("conv1 output activation range: ", max(network.output_collection[0].flatten()),  min(network.output_collection[0].flatten()))
+    print("conv2 output activation range: ", max(network.output_collection[2].flatten()), min(network.output_collection[2].flatten()))
+    print("fc1 output activation range: ", max(network.output_collection[4].flatten()), min(network.output_collection[4].flatten()))
+    print("fc1 output activation range: ", max(network.output_collection[5].flatten()), min(network.output_collection[5].flatten()))
+    print("fc1 output activation range: ", max(network.output_collection[6].flatten()), min(network.output_collection[6].flatten()))
+
+        
+    
+        
 
 
 
