@@ -26,12 +26,13 @@ class MaxPoolLayer(Layer):
         '''
         super().__init__(num_input_channel, window_size, num_input_channel)
         
-    def inference(self, input_activation: np.array): 
+    def inference(self, input_activation: np.array, bit_width: int): 
         '''
         Description:
             Function that carries out the inference of the layer
         Paremeter(s):
             input_activation := the input activation of this layer, an np array
+            bit_width        := not used 
         Return Value(s):
             output_activation := the output activation of this layer, an np array
         Exception(s):

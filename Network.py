@@ -46,13 +46,14 @@ class Network:
         self.layers.append(new_layer)
         self.num_layers += 1
     
-    def inference(self, input_activation, num_batch):
+    def inference(self, input_activation, num_batch, bit_width):
         '''
         Description:
             Function that performs inference of the network.
         Parameter(s):
             input_activation(np.arry): the original input image.
             num_batch(int)           : the id of the batch the input activation belongs to 
+            bit_width                : the bit width of the partial sum
         Return Value(S):
             output_activation(np.array): the final output of the network.
         Exception(s):
@@ -68,7 +69,7 @@ class Network:
         output_activation = quantized_input
         count = 0
         for layer in self.layers:
-            output_activation, collection = layer.inference(output_activation)
+            output_activation, collection = layer.inference(output_activation, bit_width)
             self.output_collection[count][num_batch: num_batch + 4] = collection
             count += 1
         return output_activation

@@ -36,12 +36,13 @@ class Conv2dLayer(Layer):
         # set the activation quantization scale
         self.activation_scale = activation_scale
 
-    def inference(self, input_activation: np.array): 
+    def inference(self, input_activation: np.array, bit_width: int): 
         '''
         Description:
             Function that carries out the inference of the layer
         Paremeter(s):
             input_activation(np.array): the input activation of this layer, an np array
+            bit_width(int)            : the bit width of the partial sum
         Return Value(s):
             output_activation(np.array): the output activation of this layer, an np array
             output_collection(np.array): the flattened unquantized output activation
@@ -55,7 +56,7 @@ class Conv2dLayer(Layer):
         # accumulate the partial sum
         # this method is implemented using a static method
         # to avoid dealing with jitclass
-        self.convolve(input_activation, partial_sum, self.weight, self.window_size, self.num_input_channel) 
+        self.convolve(input_activation, partial_sum, self.weight, self.window_size, self.num_input_channel, bit_width) 
         # collect the unquantized partial sum
         output_collection = partial_sum.reshape(partial_sum.shape[0], -1)        
         # quantize the output activation by scaling it.
@@ -68,7 +69,7 @@ class Conv2dLayer(Layer):
         return output_activation, output_collection
     @staticmethod
     @nb.jit()
-    def convolve(input_activation, partial_sum, weight, window_size, num_input_channel):
+    def convolve(input_activation, partial_sum, weight, window_size, num_input_channel, bit_width):
         '''
         Description:
             Function that carries out the convolution process
@@ -78,6 +79,7 @@ class Conv2dLayer(Layer):
             weight(np.array)          : the weight of the kernel
             window_size(int)          : the windows size of the kernel
             num_input_channel(int)    : number of channals 'input_activation' contains
+            bit_width(int)            : the bit width of the partial sum
         Return Value(s)
             N/A
         '''
@@ -94,12 +96,12 @@ class Conv2dLayer(Layer):
                         # relu activation    
                         partial_sum[n][m][p][q] = 0 if partial_sum[n][m][p][q] < 0 else partial_sum[n][m][p][q]
                         # reduce bit width to 19 bits
-                        if partial_sum[n][m][p][q] > 524287: 
-                            partial_sum[n][m][p][q] = 524287
-                            print("OVERFLOW +")
-                        elif partial_sum[n][m][p][q] < -52488:
-                            partial_sum[n][m][p][q] = -524288
-                            print("OVERFLOW -")
+                        if partial_sum[n][m][p][q] > 2 ** bit_width - 1: 
+                            partial_sum[n][m][p][q] = 2 ** bit_width - 1
+                            # print("OVERFLOW +")
+                        elif partial_sum[n][m][p][q] < -1 * 2 ** bit_width:
+                            partial_sum[n][m][p][q] = -1 * 2 ** bit_width
+                            # print("OVERFLOW -")
 
    
 if __name__ == "__main__":

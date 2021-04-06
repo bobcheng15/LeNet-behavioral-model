@@ -47,12 +47,13 @@ class LinearLayer(Layer):
         if self.is_biased:
             np.copyto(self.bias_weight, bias_weight)
 
-    def inference(self, input_activation: np.array): 
+    def inference(self, input_activation: np.array, bit_width: int): 
         '''
         Description:
             Function that carries out the inference of the layer
         Paremeter(s):
             input_activation := the input activation of this layer, an np array
+            bit_width        := the bit width of the partial sum
         Return Value(s):
             output_activation := the output activation of this layer, an np array
         Exception(s):
@@ -71,7 +72,7 @@ class LinearLayer(Layer):
         # collect the unquantized partial sum
         output_collection = partial_sum.reshape(partial_sum.shape[0], -1)
         # use a static method to accumulate the partial sum since numba's class support is shit
-        self.FullConCompute(input_activation, partial_sum, self.weight, self.is_biased, self.bias_weight, self.num_input_channel, self.activation_type)
+        self.FullConCompute(input_activation, partial_sum, self.weight, self.is_biased, self.bias_weight, self.num_input_channel, self.activation_type, bit_width)
         # quantize the output activation by scaling it.
         output_activation = self.activation_scale * partial_sum
         # round the output activation and clip the activations that is out of range.
@@ -82,7 +83,7 @@ class LinearLayer(Layer):
 
     @staticmethod
     @nb.jit()      
-    def FullConCompute(input_activation, partial_sum, weight, is_biased, bias_weight, num_input_channel, activation_type):
+    def FullConCompute(input_activation, partial_sum, weight, is_biased, bias_weight, num_input_channel, activation_type, bit_width):
         '''
         Description:
             Function that carry out the computation of the fully connected layer and applies the activation function
@@ -94,6 +95,9 @@ class LinearLayer(Layer):
             biase_weight(np.arry)     : the bias of this layer
             num_input_channel(int)    : the number of channel input_activation possesses
             activation_type(str)      : the type of the activation function, 'ReLU', or 'None'
+            bit_width(int)            : the bit with of the partial sum 
+        Return Value(s):
+            N/A
         '''
         for i in range(0, partial_sum.shape[0]):
             for j in range(0, partial_sum.shape[1]):
@@ -103,13 +107,13 @@ class LinearLayer(Layer):
                     # applies activation functino, if this layer have one
                     partial_sum[i][j] = 0 if activation_type == 'ReLU' and partial_sum[i][j] < 0 else partial_sum[i][j]
                     # reduce bit width to 19 bits.
-                    if partial_sum[i][j] > 524287: 
-                        partial_sum[i][j] = 524287
-                        print("OVERFLOW +")
-                    elif partial_sum[i][j] < -524288:
-                        print(partial_sum[i][j])
-                        partial_sum[i][j] = -524288
-                        print("LL OVERFLOW -")
+                    if partial_sum[i][j] > 2 ** bit_width - 1: 
+                        partial_sum[i][j] = 2 ** bit_width - 1
+                        # print("OVERFLOW +")
+                    elif partial_sum[i][j] < -1 * 2 ** bit_width:
+                        # print(partial_sum[i][j])
+                        partial_sum[i][j] = -1 * 2 ** bit_width
+                        # print("LL OVERFLOW -")
 
 if __name__ == "__main__":
     # create numpy array for the weight of conv1
