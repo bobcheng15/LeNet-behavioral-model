@@ -100,7 +100,16 @@ class LinearLayer(Layer):
                     for l in range(0, num_input_channel):
                         partial_sum[i][j] += input_activation[i][l] * weight[j][l]
                     partial_sum[i][j] += bias_weight[j]
+                    # applies activation functino, if this layer have one
                     partial_sum[i][j] = 0 if activation_type == 'ReLU' and partial_sum[i][j] < 0 else partial_sum[i][j]
+                    # reduce bit width to 19 bits.
+                    if partial_sum[i][j] > 524287: 
+                        partial_sum[i][j] = 524287
+                        print("OVERFLOW +")
+                    elif partial_sum[i][j] < -524288:
+                        print(partial_sum[i][j])
+                        partial_sum[i][j] = -524288
+                        print("LL OVERFLOW -")
 
 if __name__ == "__main__":
     # create numpy array for the weight of conv1
