@@ -59,6 +59,7 @@ class LinearLayer(Layer):
         Exception(s):
             N/A
         '''
+        self.bias_weight = np.clip(self.bias_weight, a_min=-1 * 2 ** bit_width, a_max=2 ** bit_width - 1)
         # case input_activation to np.uint8 (just to make sure)
         if len(input_activation.shape) != 2:
             input_activation = input_activation.astype(np.int8)
@@ -103,18 +104,26 @@ class LinearLayer(Layer):
             for j in range(0, partial_sum.shape[1]):
                     for l in range(0, num_input_channel):
                         partial_sum[i][j] += input_activation[i][l] * weight[j][l]
+                        if partial_sum[i][j] > 2 ** bit_width - 1: 
+                            partial_sum[i][j] = 2 ** bit_width - 1
+                            # print("OVERFLOW +")
+                        elif partial_sum[i][j] < -1 * 2 ** bit_width:
+                            # print(partial_sum[i][j])
+                            partial_sum[i][j] = -1 * 2 ** bit_width
+                            # print("LL OVERFLOW -")
+
                     partial_sum[i][j] += bias_weight[j]
                     # applies activation functino, if this layer have one
-                    partial_sum[i][j] = 0 if activation_type == 'ReLU' and partial_sum[i][j] < 0 else partial_sum[i][j]
-                    # reduce bit width to 19 bits.
                     if partial_sum[i][j] > 2 ** bit_width - 1: 
-                        partial_sum[i][j] = 2 ** bit_width - 1
-                        # print("OVERFLOW +")
+                            partial_sum[i][j] = 2 ** bit_width - 1
+                            # print("OVERFLOW +")
                     elif partial_sum[i][j] < -1 * 2 ** bit_width:
                         # print(partial_sum[i][j])
                         partial_sum[i][j] = -1 * 2 ** bit_width
                         # print("LL OVERFLOW -")
-
+                    partial_sum[i][j] = 0 if activation_type == 'ReLU' and partial_sum[i][j] < 0 else partial_sum[i][j]
+                    # reduce bit width to 19 bits.
+                    
 if __name__ == "__main__":
     # create numpy array for the weight of conv1
     conv1_weight = np.zeros((6, 3, 5, 5), dtype=np.int8)
